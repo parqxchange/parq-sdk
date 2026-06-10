@@ -1,0 +1,3927 @@
+{
+  "address": "Acme8JzWrvVqGJz7nTKVsLYisN6MtP83nrs4fVAeXJsN",
+  "metadata": {
+    "name": "pool_program",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "accrue_fee",
+      "discriminator": [
+        195,
+        95,
+        246,
+        102,
+        250,
+        61,
+        187,
+        28
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "fee_settings"
+        },
+        {
+          "name": "engine_auth",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "already_in_pool",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "accrue_to_insurance",
+      "discriminator": [
+        224,
+        192,
+        233,
+        111,
+        3,
+        6,
+        98,
+        50
+      ],
+      "accounts": [
+        {
+          "name": "insurance_fund",
+          "docs": [
+            "Insurance fund state (mutated for total_accrued + event)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  115,
+                  117,
+                  114,
+                  97,
+                  110,
+                  99,
+                  101,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool_state",
+          "docs": [
+            "Pool state for the market being liquidated. We mutate `total_usdc` to",
+            "reflect that 25 bps was never LP-owned."
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_vault_usdc",
+          "docs": [
+            "Source: pool's USDC vault. Must match `pool_state`'s vault."
+          ],
+          "writable": true
+        },
+        {
+          "name": "insurance_vault",
+          "docs": [
+            "Destination: insurance fund's USDC vault."
+          ],
+          "writable": true
+        },
+        {
+          "name": "vault_authority"
+        },
+        {
+          "name": "engine_auth",
+          "docs": [
+            "Key equality with pool_state.engine_auth enforced in handler."
+          ],
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "apply_queue_collateral_draw",
+      "discriminator": [
+        140,
+        109,
+        48,
+        135,
+        73,
+        78,
+        164,
+        163
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_claims",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  113,
+                  117,
+                  101,
+                  117,
+                  101,
+                  95,
+                  99,
+                  108,
+                  97,
+                  105,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              },
+              {
+                "kind": "account",
+                "path": "trader"
+              }
+            ]
+          }
+        },
+        {
+          "name": "trader",
+          "docs": [
+            "Trader wallet — payer for rent on first init, and owner of the claims account."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "engine_auth",
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "market_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "apply_queue_haircut",
+      "docs": [
+        "ADL Tier B — permissionless queue-IOU haircut. Walks the contiguous aged",
+        "Pending prefix from queue_head_idx and socializes the unbacked tail",
+        "pro-rata, re-deriving the whole trigger live from on-chain bytes. The",
+        "handler is the sole gate. Step 3, 2026-06-05."
+      ],
+      "discriminator": [
+        60,
+        181,
+        236,
+        16,
+        168,
+        31,
+        41,
+        40
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "market_state",
+          "docs": [
+            "are validated in-handler before any byte is trusted."
+          ]
+        },
+        {
+          "name": "protocol_config",
+          "docs": [
+            "`[b\"protocol_config\"]` PDA derivation are validated in-handler."
+          ]
+        },
+        {
+          "name": "caller",
+          "docs": [
+            "Permissionless caller — keeps the keeper-down / backup-operator story."
+          ],
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "max_entries",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "apply_retroactive_funding",
+      "docs": [
+        "Admin-only retroactive funding correction (2026-06-09). Debits one",
+        "Pending queue IOU by the funding it dodged while adaptive funding was",
+        "structurally off (launch → 2026-06-09). Gated on `pool_state.admin`."
+      ],
+      "discriminator": [
+        122,
+        5,
+        179,
+        204,
+        24,
+        119,
+        127,
+        240
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "entry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  121,
+                  111,
+                  117,
+                  116,
+                  95,
+                  113,
+                  117,
+                  101,
+                  117,
+                  101,
+                  95,
+                  101,
+                  110,
+                  116,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              },
+              {
+                "kind": "account",
+                "path": "entry.idx",
+                "account": "PayoutQueueEntry"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_claims",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  113,
+                  117,
+                  101,
+                  117,
+                  101,
+                  95,
+                  99,
+                  108,
+                  97,
+                  105,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              },
+              {
+                "kind": "account",
+                "path": "entry.owner",
+                "account": "PayoutQueueEntry"
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "pool_state"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "funding_debit",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "credit_collateral",
+      "discriminator": [
+        204,
+        253,
+        95,
+        70,
+        8,
+        9,
+        177,
+        136
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "engine_auth",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "deposit",
+      "discriminator": [
+        242,
+        35,
+        198,
+        137,
+        82,
+        225,
+        242,
+        182
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "usdc_vault",
+          "writable": true
+        },
+        {
+          "name": "vault_authority"
+        },
+        {
+          "name": "lp_mint",
+          "writable": true
+        },
+        {
+          "name": "user_lp",
+          "writable": true
+        },
+        {
+          "name": "user_usdc",
+          "writable": true
+        },
+        {
+          "name": "lp_dead",
+          "writable": true
+        },
+        {
+          "name": "depositor",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "min_lp_out",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "drain_phantom_credit",
+      "discriminator": [
+        101,
+        112,
+        34,
+        223,
+        168,
+        8,
+        7,
+        133
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_vault",
+          "writable": true
+        },
+        {
+          "name": "vault_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_claims",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  113,
+                  117,
+                  101,
+                  117,
+                  101,
+                  95,
+                  99,
+                  108,
+                  97,
+                  105,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user",
+          "signer": true
+        },
+        {
+          "name": "user_usdc",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "harvest",
+      "discriminator": [
+        228,
+        241,
+        31,
+        182,
+        53,
+        169,
+        59,
+        199
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_vault",
+          "writable": true
+        },
+        {
+          "name": "vault_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "caller",
+          "docs": [
+            "Caller receives rent refunds when entry PDAs are closed."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "insurance_fund",
+          "writable": true,
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  115,
+                  117,
+                  114,
+                  97,
+                  110,
+                  99,
+                  101,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "insurance_vault",
+          "docs": [
+            "insurance_vault.key() == insurance_fund.usdc_vault is verified in the handler",
+            "(Anchor `address =` against an Option account is brittle)."
+          ],
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "insurance_vault_authority",
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  115,
+                  117,
+                  114,
+                  97,
+                  110,
+                  99,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "max_entries",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "initialize_fee_settings",
+      "discriminator": [
+        237,
+        216,
+        202,
+        236,
+        147,
+        64,
+        7,
+        12
+      ],
+      "accounts": [
+        {
+          "name": "pool_state"
+        },
+        {
+          "name": "fee_settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "pool_state"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeFeeSettingsArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_insurance_fund",
+      "discriminator": [
+        2,
+        239,
+        39,
+        87,
+        50,
+        28,
+        108,
+        12
+      ],
+      "accounts": [
+        {
+          "name": "insurance_fund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  115,
+                  117,
+                  114,
+                  97,
+                  110,
+                  99,
+                  101,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  115,
+                  117,
+                  114,
+                  97,
+                  110,
+                  99,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_authority",
+          "docs": [
+            "Never holds data; only signs SPL transfers for the vault via PDA seeds."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  115,
+                  117,
+                  114,
+                  97,
+                  110,
+                  99,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "admin",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "initialize_pool",
+      "discriminator": [
+        95,
+        180,
+        10,
+        172,
+        84,
+        174,
+        232,
+        40
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "args.market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "args.market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "args.market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lp_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  112,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "args.market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializePoolArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "migrate_pool_state_v2",
+      "docs": [
+        "PoolState V1 (240) → V2 (252): appends the ADL idempotency state",
+        "(current_adl_epoch, last_adl_cut_idx). The FIRST-EVER pool realloc.",
+        "Step 3, 2026-06-05."
+      ],
+      "discriminator": [
+        254,
+        70,
+        145,
+        57,
+        158,
+        248,
+        76,
+        50
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "docs": [
+            "admin is validated from the raw buffer in the handler."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "market_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "reimburse_liquidator",
+      "docs": [
+        "Followup #44 — liquidator-reward fallback. CPI-only; signer is",
+        "perp-engine `engine_auth`. See `reimburse_liquidator.rs`."
+      ],
+      "discriminator": [
+        253,
+        77,
+        46,
+        14,
+        221,
+        174,
+        247,
+        171
+      ],
+      "accounts": [
+        {
+          "name": "insurance_fund",
+          "docs": [
+            "Insurance fund state (mutated for counter + event)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  115,
+                  117,
+                  114,
+                  97,
+                  110,
+                  99,
+                  101,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "insurance_vault",
+          "docs": [
+            "Source: insurance fund's USDC vault."
+          ],
+          "writable": true
+        },
+        {
+          "name": "insurance_vault_authority",
+          "docs": [
+            "Validated via seed-bind; mirrors `reimburse_pool_from_fund`."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  115,
+                  117,
+                  114,
+                  97,
+                  110,
+                  99,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "liquidator_ata",
+          "docs": [
+            "Destination: liquidator's USDC ATA."
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_state",
+          "docs": [
+            "Read-only — anchors `engine_auth.key() == pool_state.engine_auth`.",
+            "Perp-engine's liquidate handler already passes `pool_state` (it's",
+            "the market's pool), so threading it here is free."
+          ]
+        },
+        {
+          "name": "engine_auth",
+          "docs": [
+            "Key equality with `pool_state.engine_auth` enforced in handler."
+          ],
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "reimburse_pool_from_fund",
+      "discriminator": [
+        205,
+        73,
+        194,
+        63,
+        165,
+        200,
+        130,
+        127
+      ],
+      "accounts": [
+        {
+          "name": "insurance_fund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  115,
+                  117,
+                  114,
+                  97,
+                  110,
+                  99,
+                  101,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool_state",
+          "docs": [
+            "Pool to reimburse. No seed constraint — admin can pick any pool to",
+            "restore after a bad-debt event. `address = pool_state.usdc_vault` on",
+            "`pool_vault_usdc` below pins source-of-truth wiring."
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_vault_usdc",
+          "writable": true
+        },
+        {
+          "name": "insurance_vault",
+          "writable": true
+        },
+        {
+          "name": "vault_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  115,
+                  117,
+                  114,
+                  97,
+                  110,
+                  99,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "insurance_fund"
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "sweep_stranded_to_insurance",
+      "discriminator": [
+        222,
+        173,
+        220,
+        245,
+        212,
+        29,
+        17,
+        226
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "pool_vault_usdc",
+          "writable": true
+        },
+        {
+          "name": "vault_authority"
+        },
+        {
+          "name": "lp_mint"
+        },
+        {
+          "name": "insurance_fund",
+          "writable": true
+        },
+        {
+          "name": "insurance_vault",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "pool_state"
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "release_and_enqueue",
+      "discriminator": [
+        169,
+        214,
+        12,
+        12,
+        64,
+        239,
+        180,
+        121
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "trader",
+          "docs": [
+            "The user/trader being settled. Used as a seed for user_claims and stored",
+            "in queue_entry.owner / user_claims.owner. Does NOT need to sign — the",
+            "rent_payer signs and pays. Verified by perp-engine to be the position owner."
+          ]
+        },
+        {
+          "name": "rent_payer",
+          "docs": [
+            "The lamports source for the new PDAs. For user-driven closes (close_position),",
+            "callers pass the trader's account here. For keeper-driven decreases",
+            "(execute_decrease), callers pass the keeper's account here."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "engine_auth",
+          "signer": true
+        },
+        {
+          "name": "queue_entry",
+          "docs": [
+            "New queue entry PDA. Index = pool_state.queue_tail_idx at time of call."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  121,
+                  111,
+                  117,
+                  116,
+                  95,
+                  113,
+                  117,
+                  101,
+                  117,
+                  101,
+                  95,
+                  101,
+                  110,
+                  116,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.queue_tail_idx",
+                "account": "PoolState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_claims",
+          "docs": [
+            "User's queue claims tracking account. init_if_needed: first enqueue for",
+            "this user creates the account; subsequent enqueues just update unpaid_owed."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  113,
+                  117,
+                  101,
+                  117,
+                  101,
+                  95,
+                  99,
+                  108,
+                  97,
+                  105,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              },
+              {
+                "kind": "account",
+                "path": "trader"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "usdc_vault",
+          "writable": true
+        },
+        {
+          "name": "vault_authority"
+        },
+        {
+          "name": "user_usdc",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "reserved",
+          "type": "u64"
+        },
+        {
+          "name": "direct_payout",
+          "type": "u64"
+        },
+        {
+          "name": "enqueue_amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "release_and_settle",
+      "discriminator": [
+        59,
+        11,
+        165,
+        99,
+        223,
+        29,
+        150,
+        230
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "usdc_vault",
+          "writable": true
+        },
+        {
+          "name": "vault_authority"
+        },
+        {
+          "name": "user_usdc",
+          "writable": true
+        },
+        {
+          "name": "engine_auth",
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "reserved",
+          "type": "u64"
+        },
+        {
+          "name": "net_return",
+          "type": "u64"
+        },
+        {
+          "name": "bad_debt",
+          "type": "u64"
+        },
+        {
+          "name": "lp_gain",
+          "type": "u64"
+        },
+        {
+          "name": "enqueue_winner",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "release_queue_lien",
+      "discriminator": [
+        41,
+        176,
+        234,
+        229,
+        105,
+        201,
+        85,
+        159
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_claims",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  113,
+                  117,
+                  101,
+                  117,
+                  101,
+                  95,
+                  99,
+                  108,
+                  97,
+                  105,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              },
+              {
+                "kind": "account",
+                "path": "user_claims.owner",
+                "account": "UserQueueClaims"
+              }
+            ]
+          }
+        },
+        {
+          "name": "engine_auth",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "collateral_release",
+          "type": "u64"
+        },
+        {
+          "name": "phantom_credit",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "set_insurance_auto_payouts",
+      "docs": [
+        "Admin kill switch: when `frozen`, disables the two AUTOMATIC insurance",
+        "debits — `reimburse_liquidator` (#44) no-ops and `harvest`'s #129",
+        "queued-winner fallback declines to draw from the fund. The MANUAL levers",
+        "(`reimburse_pool_from_fund`, `withdraw_insurance`) are unaffected, so the",
+        "fund becomes an emergency-only reserve. Reversible in one tx."
+      ],
+      "discriminator": [
+        117,
+        181,
+        125,
+        174,
+        207,
+        84,
+        119,
+        133
+      ],
+      "accounts": [
+        {
+          "name": "insurance_fund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  115,
+                  117,
+                  114,
+                  97,
+                  110,
+                  99,
+                  101,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "insurance_fund"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "frozen",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "set_paused",
+      "discriminator": [
+        91,
+        60,
+        125,
+        192,
+        176,
+        225,
+        166,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "pool_state"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "paused",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "sweep_fees",
+      "discriminator": [
+        175,
+        225,
+        98,
+        71,
+        118,
+        66,
+        34,
+        148
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "fee_settings"
+        },
+        {
+          "name": "usdc_vault",
+          "writable": true
+        },
+        {
+          "name": "vault_authority"
+        },
+        {
+          "name": "fee_pool_usdc",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "update_fee_settings",
+      "discriminator": [
+        155,
+        121,
+        178,
+        253,
+        181,
+        139,
+        103,
+        177
+      ],
+      "accounts": [
+        {
+          "name": "pool_state"
+        },
+        {
+          "name": "fee_settings",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "pool_state"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "UpdateFeeSettingsArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_pool_config",
+      "discriminator": [
+        68,
+        236,
+        203,
+        122,
+        179,
+        62,
+        234,
+        252
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "pool_state"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "UpdatePoolConfigArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_reserve",
+      "discriminator": [
+        46,
+        250,
+        249,
+        240,
+        166,
+        54,
+        22,
+        86
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "engine_auth",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "delta",
+          "type": "u64"
+        },
+        {
+          "name": "increase",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "void_queue_claim",
+      "discriminator": [
+        113,
+        4,
+        122,
+        170,
+        246,
+        100,
+        118,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "entry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  121,
+                  111,
+                  117,
+                  116,
+                  95,
+                  113,
+                  117,
+                  101,
+                  117,
+                  101,
+                  95,
+                  101,
+                  110,
+                  116,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              },
+              {
+                "kind": "account",
+                "path": "entry.idx",
+                "account": "PayoutQueueEntry"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_claims",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  95,
+                  113,
+                  117,
+                  101,
+                  117,
+                  101,
+                  95,
+                  99,
+                  108,
+                  97,
+                  105,
+                  109,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool_state.market_id",
+                "account": "PoolState"
+              },
+              {
+                "kind": "account",
+                "path": "entry.owner",
+                "account": "PayoutQueueEntry"
+              }
+            ]
+          }
+        },
+        {
+          "name": "engine_auth",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "withdraw",
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "pool_state",
+          "writable": true
+        },
+        {
+          "name": "usdc_vault",
+          "writable": true
+        },
+        {
+          "name": "vault_authority"
+        },
+        {
+          "name": "lp_mint",
+          "writable": true
+        },
+        {
+          "name": "user_lp",
+          "writable": true
+        },
+        {
+          "name": "user_usdc",
+          "writable": true
+        },
+        {
+          "name": "withdrawer",
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "lp_amount",
+          "type": "u64"
+        },
+        {
+          "name": "min_out",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "withdraw_insurance",
+      "discriminator": [
+        201,
+        133,
+        145,
+        118,
+        235,
+        89,
+        90,
+        189
+      ],
+      "accounts": [
+        {
+          "name": "insurance_fund",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  115,
+                  117,
+                  114,
+                  97,
+                  110,
+                  99,
+                  101,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "insurance_vault",
+          "writable": true
+        },
+        {
+          "name": "destination",
+          "writable": true
+        },
+        {
+          "name": "vault_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  115,
+                  117,
+                  114,
+                  97,
+                  110,
+                  99,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "insurance_fund"
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "FeeSettings",
+      "discriminator": [
+        251,
+        152,
+        237,
+        9,
+        118,
+        2,
+        153,
+        254
+      ]
+    },
+    {
+      "name": "InsuranceFund",
+      "discriminator": [
+        43,
+        134,
+        170,
+        87,
+        102,
+        16,
+        142,
+        147
+      ]
+    },
+    {
+      "name": "PayoutQueueEntry",
+      "discriminator": [
+        151,
+        131,
+        26,
+        4,
+        248,
+        131,
+        239,
+        144
+      ]
+    },
+    {
+      "name": "PoolState",
+      "discriminator": [
+        247,
+        237,
+        227,
+        245,
+        215,
+        195,
+        222,
+        70
+      ]
+    },
+    {
+      "name": "UserQueueClaims",
+      "discriminator": [
+        254,
+        28,
+        239,
+        211,
+        144,
+        237,
+        162,
+        94
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "AdlHaircutApplied",
+      "discriminator": [
+        45,
+        183,
+        107,
+        249,
+        160,
+        213,
+        154,
+        255
+      ]
+    },
+    {
+      "name": "AdlTailUnclearable",
+      "discriminator": [
+        192,
+        236,
+        249,
+        237,
+        3,
+        27,
+        201,
+        205
+      ]
+    },
+    {
+      "name": "CollateralCredited",
+      "discriminator": [
+        156,
+        23,
+        89,
+        66,
+        212,
+        66,
+        33,
+        152
+      ]
+    },
+    {
+      "name": "Deposited",
+      "discriminator": [
+        111,
+        141,
+        26,
+        45,
+        161,
+        35,
+        100,
+        57
+      ]
+    },
+    {
+      "name": "Enqueued",
+      "discriminator": [
+        246,
+        221,
+        33,
+        102,
+        216,
+        11,
+        89,
+        229
+      ]
+    },
+    {
+      "name": "EntryVoided",
+      "discriminator": [
+        61,
+        9,
+        200,
+        25,
+        118,
+        237,
+        229,
+        110
+      ]
+    },
+    {
+      "name": "FeesSwept",
+      "discriminator": [
+        96,
+        218,
+        115,
+        136,
+        74,
+        170,
+        202,
+        172
+      ]
+    },
+    {
+      "name": "Harvested",
+      "discriminator": [
+        249,
+        229,
+        78,
+        151,
+        106,
+        185,
+        149,
+        11
+      ]
+    },
+    {
+      "name": "InsuranceAccrued",
+      "discriminator": [
+        36,
+        113,
+        132,
+        176,
+        50,
+        199,
+        158,
+        215
+      ]
+    },
+    {
+      "name": "InsuranceAutoPayoutsSet",
+      "discriminator": [
+        48,
+        182,
+        26,
+        194,
+        149,
+        152,
+        81,
+        62
+      ]
+    },
+    {
+      "name": "InsuranceReimbursed",
+      "discriminator": [
+        231,
+        223,
+        178,
+        75,
+        208,
+        182,
+        108,
+        254
+      ]
+    },
+    {
+      "name": "InsuranceReimbursedLiquidator",
+      "discriminator": [
+        224,
+        242,
+        193,
+        221,
+        18,
+        129,
+        184,
+        105
+      ]
+    },
+    {
+      "name": "InsuranceWithdrawn",
+      "discriminator": [
+        85,
+        95,
+        150,
+        170,
+        148,
+        235,
+        180,
+        156
+      ]
+    },
+    {
+      "name": "MarginReturned",
+      "discriminator": [
+        133,
+        233,
+        166,
+        9,
+        235,
+        18,
+        193,
+        184
+      ]
+    },
+    {
+      "name": "PhantomCreditDrained",
+      "discriminator": [
+        180,
+        154,
+        15,
+        254,
+        240,
+        153,
+        236,
+        130
+      ]
+    },
+    {
+      "name": "QueueDrained",
+      "discriminator": [
+        30,
+        233,
+        202,
+        225,
+        215,
+        185,
+        69,
+        162
+      ]
+    },
+    {
+      "name": "ReserveUpdated",
+      "discriminator": [
+        120,
+        82,
+        176,
+        2,
+        65,
+        15,
+        142,
+        232
+      ]
+    },
+    {
+      "name": "RetroactiveFundingApplied",
+      "discriminator": [
+        29,
+        154,
+        201,
+        249,
+        129,
+        10,
+        17,
+        25
+      ]
+    },
+    {
+      "name": "Settled",
+      "discriminator": [
+        232,
+        210,
+        40,
+        17,
+        142,
+        124,
+        145,
+        238
+      ]
+    },
+    {
+      "name": "SideBucketCredited",
+      "discriminator": [
+        194,
+        14,
+        130,
+        209,
+        221,
+        159,
+        26,
+        164
+      ]
+    },
+    {
+      "name": "StrandedLpGainSweptToInsurance",
+      "discriminator": [
+        66,
+        145,
+        181,
+        189,
+        9,
+        212,
+        139,
+        165
+      ]
+    },
+    {
+      "name": "Withdrawn",
+      "discriminator": [
+        20,
+        89,
+        223,
+        198,
+        194,
+        124,
+        219,
+        13
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Paused",
+      "msg": "Pool is paused"
+    },
+    {
+      "code": 6001,
+      "name": "InsufficientLiquidity",
+      "msg": "Insufficient free liquidity for withdrawal"
+    },
+    {
+      "code": 6002,
+      "name": "ReserveOverflow",
+      "msg": "Reserve overflow"
+    },
+    {
+      "code": 6003,
+      "name": "Unauthorized",
+      "msg": "Unauthorized caller"
+    },
+    {
+      "code": 6004,
+      "name": "MathOverflow",
+      "msg": "Math overflow"
+    },
+    {
+      "code": 6005,
+      "name": "ZeroLpSupply",
+      "msg": "Zero LP supply"
+    },
+    {
+      "code": 6006,
+      "name": "ZeroAmount",
+      "msg": "Amount must be greater than zero"
+    },
+    {
+      "code": 6007,
+      "name": "NoFeesToSweep",
+      "msg": "No fees to sweep"
+    },
+    {
+      "code": 6008,
+      "name": "FeePoolMismatch",
+      "msg": "Fee pool USDC mismatch"
+    },
+    {
+      "code": 6009,
+      "name": "LpFeeBpsOutOfRange",
+      "msg": "LP fee bps out of range (must be 1000-9000)"
+    },
+    {
+      "code": 6010,
+      "name": "FirstDepositTooSmall",
+      "msg": "First deposit must be >= $100"
+    },
+    {
+      "code": 6011,
+      "name": "ReserveFactorExceeded",
+      "msg": "Reserve factor exceeded"
+    },
+    {
+      "code": 6012,
+      "name": "QueueEntryNotPending",
+      "msg": "Queue entry is not in Pending status"
+    },
+    {
+      "code": 6013,
+      "name": "QueueNonEmpty",
+      "msg": "Queue is non-empty; phantom drain requires queue_total_owed == 0"
+    },
+    {
+      "code": 6014,
+      "name": "PhantomEmpty",
+      "msg": "Phantom credit is zero"
+    },
+    {
+      "code": 6015,
+      "name": "InsufficientClaim",
+      "msg": "Insufficient claim for the requested from_queue_amount"
+    },
+    {
+      "code": 6016,
+      "name": "PhantomDrainInsufficientFunds",
+      "msg": "Pool insufficient funds to satisfy phantom drain"
+    },
+    {
+      "code": 6017,
+      "name": "MissingAccount",
+      "msg": "Required account missing from remaining_accounts"
+    },
+    {
+      "code": 6018,
+      "name": "WrongEntryIndex",
+      "msg": "Queue entry idx does not match queue_head_idx"
+    },
+    {
+      "code": 6019,
+      "name": "WrongMarketId",
+      "msg": "Queue entry market_id mismatch"
+    },
+    {
+      "code": 6020,
+      "name": "OwnerMismatch",
+      "msg": "UserQueueClaims owner mismatch with queue entry owner"
+    },
+    {
+      "code": 6021,
+      "name": "SlippageExceeded",
+      "msg": "Slippage exceeded — actual return below min_out / mint below min_lp_out"
+    },
+    {
+      "code": 6022,
+      "name": "WrongAtaOwner",
+      "msg": "Harvest ATA owner does not match entry.owner"
+    },
+    {
+      "code": 6023,
+      "name": "InvalidFeeBps",
+      "msg": "Fee bps out of range (must be <= 5000 = 50%)"
+    },
+    {
+      "code": 6024,
+      "name": "InsufficientInsuranceFund",
+      "msg": "Insurance fund balance insufficient for requested amount"
+    },
+    {
+      "code": 6025,
+      "name": "WrongMint",
+      "msg": "Destination mint does not match source mint"
+    },
+    {
+      "code": 6026,
+      "name": "AdlDisarmed",
+      "msg": "ADL is disarmed for this market (adl_frozen set)"
+    },
+    {
+      "code": 6027,
+      "name": "AdlNotArmed",
+      "msg": "ADL trigger not armed: deficit below floor, head fundable, or head not aged"
+    },
+    {
+      "code": 6028,
+      "name": "WrongMarketState",
+      "msg": "MarketState account does not match this pool's market/engine"
+    },
+    {
+      "code": 6029,
+      "name": "WrongProtocolConfig",
+      "msg": "ProtocolConfig account does not match this pool's engine"
+    },
+    {
+      "code": 6030,
+      "name": "NothingToDebit",
+      "msg": "Retroactive funding debit resolves to zero (entry already at/below target)"
+    },
+    {
+      "code": 6031,
+      "name": "StrandedPoolBalance",
+      "msg": "Pool holds a stranded balance with zero LP supply; sweep to insurance before the first deposit"
+    },
+    {
+      "code": 6032,
+      "name": "PoolHasLpSupply",
+      "msg": "Sweep refused: pool has outstanding LP shares (total_usdc is LP-owned)"
+    }
+  ],
+  "types": [
+    {
+      "name": "AdlHaircutApplied",
+      "docs": [
+        "Emitted by `apply_queue_haircut` (Tier B) when a queue-IOU haircut is applied.",
+        "`total_cut` is removed from `queue_total_owed` (and the corresponding entries'",
+        "`amount` + owners' `unpaid_owed`), socializing the unbacked tail pro-rata."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "entries_cut",
+            "type": "u32"
+          },
+          {
+            "name": "total_cut",
+            "type": "u64"
+          },
+          {
+            "name": "deficit_before",
+            "type": "u64"
+          },
+          {
+            "name": "deficit_after",
+            "type": "u64"
+          },
+          {
+            "name": "queue_total_owed_after",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AdlTailUnclearable",
+      "docs": [
+        "Emitted by `apply_queue_haircut` when ADL was armed but could clear nothing",
+        "(the worst queue: every claim already drew its collateral, so `cut ≈ 0`) and",
+        "the deficit still exceeds the trigger floor. The terminal signal: the keeper",
+        "safety path alerts and the operator escalates by reusing PR #122",
+        "`set_trading_halt(ReduceOnly)` (or per-market `set_market_paused`). ADL never",
+        "auto-halts. See spec §4.8."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "deficit",
+            "type": "u64"
+          },
+          {
+            "name": "queue_total_owed",
+            "type": "u64"
+          },
+          {
+            "name": "side_bucket",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollateralCredited",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Deposited",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "lp_minted",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Enqueued",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "idx",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "queue_total_owed_after",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EntryVoided",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "idx",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "reason",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeeSettings",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "fee_pool_usdc",
+            "type": "pubkey"
+          },
+          {
+            "name": "lp_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeesSwept",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Harvested",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "idx",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeFeeSettingsArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "fee_pool_usdc",
+            "type": "pubkey"
+          },
+          {
+            "name": "lp_fee_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializePoolArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "engine_auth",
+            "docs": [
+              "The engine_auth PDA from perp-engine: PDA([b\"engine_auth\", market_id], perp_engine_id).",
+              "perp-engine computes this PDA, passes it here; pool stores it as the authorized caller."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "engine_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserve_factor",
+            "type": "u64"
+          },
+          {
+            "name": "deposit_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "withdrawal_fee_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InsuranceAccrued",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "total_accrued",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InsuranceAutoPayoutsSet",
+      "docs": [
+        "Emitted by `set_insurance_auto_payouts` when the admin toggles the automatic",
+        "insurance-debit kill switch (`InsuranceFund.auto_payouts_frozen`).",
+        "`frozen = true` disables #44 (liquidator reimburse) + #129 (queued-winner",
+        "harvest fallback); the manual admin levers are unaffected."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "frozen",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InsuranceFund",
+      "docs": [
+        "Cross-market USDC liquidation insurance fund.",
+        "",
+        "Singleton PDA at seeds `[b\"insurance_fund\"]`. Holds a separate USDC vault",
+        "(`usdc_vault`, a PDA-owned token account at seeds `[b\"insurance_vault\"]`)",
+        "authorized by a third PDA (`[b\"insurance_vault_authority\"]`).",
+        "",
+        "Accrues 25 bps of every liquidation (re-splits the existing 50 bps liq fee:",
+        "25 bps liquidator + 25 bps insurance). Operator-triggered reimbursement via",
+        "`reimburse_pool_from_fund` (WP-4) restores `pool.total_usdc` after bad-debt",
+        "events. See docs/superpowers/specs/2026-05-20-liquidation-insurance-fund-design.md."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "usdc_vault",
+            "docs": [
+              "USDC token account owned by the vault authority PDA."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "vault_bump",
+            "docs": [
+              "Bump for the usdc_vault PDA (`[b\"insurance_vault\"]`)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "admin",
+            "docs": [
+              "Admin authority for reimburse + withdraw operations."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "total_accrued",
+            "docs": [
+              "Lifetime monotonic accrual sum (observability only — does NOT cap accrual)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_reimbursed",
+            "docs": [
+              "Lifetime monotonic reimbursement sum (operator pool-reimburse via",
+              "`reimburse_pool_from_fund`) — observability only."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump for this InsuranceFund PDA (`[b\"insurance_fund\"]`)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "total_reimbursed_liquidator",
+            "docs": [
+              "Lifetime monotonic counter for liquidator-reward fallbacks (#44).",
+              "Incremented by `reimburse_liquidator` when perp-engine's liquidate",
+              "detects that `release_and_settle`'s PayDirect under-paid the",
+              "liquidator and the gap is sourced from the insurance fund.",
+              "Carved from the prior 32-byte `_reserved` slot — existing V1 PDAs",
+              "already have 8 zero bytes at this offset, so they decode as 0",
+              "the moment the program is redeployed (no realloc, no migration)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "auto_payouts_frozen",
+            "docs": [
+              "Kill switch for the two AUTOMATIC insurance debits. When non-zero:",
+              "`reimburse_liquidator` (#44 liquidator-reward fallback) no-ops, and",
+              "`harvest`'s #129 queued-winner fallback declines to draw from the fund",
+              "(the winner stays queued until side_bucket / LP can cover it). The",
+              "MANUAL admin levers (`reimburse_pool_from_fund`, `withdraw_insurance`)",
+              "are intentionally NOT gated, so the fund stays usable as an emergency /",
+              "discretionary reserve that pays no one automatically. Toggled by the",
+              "admin via `set_insurance_auto_payouts` — reversible in one tx, no",
+              "realloc. Carved from `_reserved`, so existing on-chain PDAs decode it as",
+              "0 (= auto-payouts ENABLED, the pre-change behavior) on redeploy; turning",
+              "it off is one admin tx after the upgrade."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "docs": [
+              "Forward-compat slot for v1.2 cap + cooldown fields. Do not remove.",
+              "Carved 32 → 24 → 23 bytes (the missing byte is `auto_payouts_frozen`",
+              "above). `InsuranceFund::LEN` stays at 122 — wire-compatible with V1."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                23
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "InsuranceReimbursed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool_state",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "total_reimbursed",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InsuranceReimbursedLiquidator",
+      "docs": [
+        "Followup #44 — liquidator-reward fallback path. Emitted by",
+        "`reimburse_liquidator` when perp-engine's liquidate handler detects",
+        "that `release_and_settle`'s saturating PayDirect under-paid the",
+        "liquidator and sources the gap from the insurance fund.",
+        "",
+        "`amount` is the shortfall covered by the fund (NOT the spec'd full",
+        "50-bps reward — that figure equals the prior `release_and_settle`",
+        "PayDirect transfer + `amount`)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "liquidator",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "total_reimbursed_liquidator",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InsuranceWithdrawn",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "destination",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarginReturned",
+      "docs": [
+        "Margin/profit split (2026-06-09). Emitted by `release_and_enqueue` when the",
+        "trader's own wallet-funded margin is returned directly in the close tx while",
+        "only the profit slice is enqueued. `amount` is the directly-paid margin (the",
+        "enqueued profit is reported separately by the paired `Enqueued` event)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PayoutQueueEntry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "idx",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "enqueued_at",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PhantomCreditDrained",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "usdc_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault_authority_bump",
+            "type": "u8"
+          },
+          {
+            "name": "lp_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "reserved_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "cumulative_fees",
+            "type": "u64"
+          },
+          {
+            "name": "engine_auth",
+            "docs": [
+              "PDA from perp-engine authorized to call update_reserve and release_and_settle.",
+              "Derived: PDA([b\"engine_auth\", market_id], perp_engine_program_id)"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "engine_auth_bump",
+            "type": "u8"
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "is_paused",
+            "type": "bool"
+          },
+          {
+            "name": "reserve_factor",
+            "type": "u64"
+          },
+          {
+            "name": "deposit_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "withdrawal_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "side_bucket",
+            "type": "u64"
+          },
+          {
+            "name": "queue_head_idx",
+            "type": "u64"
+          },
+          {
+            "name": "queue_tail_idx",
+            "type": "u64"
+          },
+          {
+            "name": "queue_total_owed",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "current_adl_epoch",
+            "type": "u32"
+          },
+          {
+            "name": "last_adl_cut_idx",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "QueueDrained",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "residual_to_treasury",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReserveUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "reserved_usdc",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RetroactiveFundingApplied",
+      "docs": [
+        "Retroactive funding correction (2026-06-09). Emitted by",
+        "`apply_retroactive_funding` when the admin debits a Pending queue IOU by the",
+        "funding it dodged while adaptive funding was structurally off (launch →",
+        "2026-06-09). `debit` is removed from the entry `amount`, the owner's",
+        "`unpaid_owed`, and `queue_total_owed`. Audit-trail event for the correction."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "idx",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "debit",
+            "type": "u64"
+          },
+          {
+            "name": "entry_amount_after",
+            "type": "u64"
+          },
+          {
+            "name": "queue_total_owed_after",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Settled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "net_return",
+            "type": "u64"
+          },
+          {
+            "name": "bad_debt",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SideBucketCredited",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "source",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StrandedLpGainSweptToInsurance",
+      "docs": [
+        "Followup #123 — emitted when `release_and_settle` detects `lp_mint.supply == 0`",
+        "for the Treasury LP-route and sweeps the lp_gain to the insurance vault instead",
+        "of letting it strand in `pool.total_usdc` (where it would be claimable by the",
+        "first depositor as the deposit-withdraw recovery cycle exploits).",
+        "",
+        "Fires only when the caller passed the optional insurance accounts via",
+        "`remaining_accounts`. Old callers (perp-engine pre-#123) won't trigger this",
+        "event and the stranding will still occur — until perp-engine is upgraded",
+        "to forward the accounts."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "total_accrued",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateFeeSettingsArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "fee_pool_usdc",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "lp_fee_bps",
+            "type": {
+              "option": "u16"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdatePoolConfigArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "reserve_factor",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "deposit_fee_bps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "withdrawal_fee_bps",
+            "type": {
+              "option": "u16"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserQueueClaims",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "unpaid_owed",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_drawn",
+            "type": "u64"
+          },
+          {
+            "name": "phantom_unpaid_owed",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Withdrawn",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "lp_burned",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}
