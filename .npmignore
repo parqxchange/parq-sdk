@@ -1,0 +1,11 @@
+# Only the compiled output ships. package.json `files: ["dist"]` is the primary
+# allowlist; this is defense-in-depth so source (and its comments), tests, and
+# fixtures never reach the npm tarball.
+src/
+__tests__/
+**/__tests__/
+**/*.test.ts
+**/fixtures/
+capture-fixtures.sh
+tsconfig*.json
+*.tgz
