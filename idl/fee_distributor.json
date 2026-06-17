@@ -1,0 +1,749 @@
+{
+  "address": "CHTpVtZQboxjM6N9xk1RR29jZyWqFNV77cmQNJ18RNNL",
+  "metadata": {
+    "name": "fee_distributor",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "disburse_referral",
+      "discriminator": [
+        17,
+        212,
+        53,
+        123,
+        212,
+        35,
+        142,
+        130
+      ],
+      "accounts": [
+        {
+          "name": "engine_auth",
+          "signer": true
+        },
+        {
+          "name": "fee_pool",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "referral_reserve",
+          "writable": true
+        },
+        {
+          "name": "affiliate_usdc",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "DisburseReferralArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "distribute_fees",
+      "discriminator": [
+        120,
+        56,
+        27,
+        7,
+        53,
+        176,
+        113,
+        186
+      ],
+      "accounts": [
+        {
+          "name": "fee_pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_account",
+          "writable": true
+        },
+        {
+          "name": "staking_reward",
+          "writable": true
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "referral_reserve",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_fee_pool",
+      "discriminator": [
+        59,
+        214,
+        181,
+        20,
+        217,
+        48,
+        146,
+        165
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "fee_pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "InitializeFeePoolArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_fee_pool_accounts",
+      "discriminator": [
+        161,
+        231,
+        119,
+        42,
+        88,
+        211,
+        222,
+        138
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "fee_pool"
+          ]
+        },
+        {
+          "name": "fee_pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "usdc_account"
+        },
+        {
+          "name": "staking_reward"
+        },
+        {
+          "name": "treasury"
+        },
+        {
+          "name": "referral_reserve"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "update_fee_split",
+      "discriminator": [
+        120,
+        149,
+        67,
+        33,
+        63,
+        94,
+        168,
+        245
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "fee_pool"
+          ]
+        },
+        {
+          "name": "fee_pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "UpdateFeeSplitArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "withdraw_treasury",
+      "discriminator": [
+        40,
+        63,
+        122,
+        158,
+        144,
+        216,
+        83,
+        96
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "fee_pool"
+          ]
+        },
+        {
+          "name": "fee_pool",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "destination",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "WithdrawTreasuryArgs"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "FeePool",
+      "discriminator": [
+        172,
+        38,
+        77,
+        146,
+        148,
+        5,
+        51,
+        242
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "FeePoolAccountsUpdated",
+      "discriminator": [
+        122,
+        253,
+        220,
+        175,
+        197,
+        49,
+        244,
+        249
+      ]
+    },
+    {
+      "name": "FeeSplitUpdated",
+      "discriminator": [
+        125,
+        91,
+        141,
+        252,
+        205,
+        113,
+        171,
+        92
+      ]
+    },
+    {
+      "name": "FeesDistributed",
+      "discriminator": [
+        209,
+        24,
+        174,
+        200,
+        236,
+        90,
+        154,
+        55
+      ]
+    },
+    {
+      "name": "ReferralDisbursed",
+      "discriminator": [
+        153,
+        146,
+        70,
+        118,
+        155,
+        113,
+        145,
+        14
+      ]
+    },
+    {
+      "name": "TreasuryWithdrawal",
+      "discriminator": [
+        244,
+        117,
+        175,
+        46,
+        187,
+        109,
+        20,
+        16
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidSplitSum",
+      "msg": "Split ratios must sum to 10000"
+    },
+    {
+      "code": 6001,
+      "name": "ReferralSplitTooLow",
+      "msg": "Referral split must be >= 100 bps"
+    },
+    {
+      "code": 6002,
+      "name": "NoFeesToDistribute",
+      "msg": "No fees to distribute"
+    },
+    {
+      "code": 6003,
+      "name": "Unauthorized",
+      "msg": "Unauthorized caller"
+    },
+    {
+      "code": 6004,
+      "name": "InsufficientReferralReserve",
+      "msg": "Insufficient referral reserve"
+    },
+    {
+      "code": 6005,
+      "name": "MathOverflow",
+      "msg": "Math overflow"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidFeePoolAuthority",
+      "msg": "Fee pool USDC account must be owned by the fee_pool PDA"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidFeePoolMint",
+      "msg": "Fee pool token accounts must use the same USDC mint"
+    },
+    {
+      "code": 6008,
+      "name": "WrongAccountOwner",
+      "msg": "Fee pool destination token account must be owned by the fee_pool PDA"
+    },
+    {
+      "code": 6009,
+      "name": "WrongMint",
+      "msg": "Withdraw destination token account must use the USDC mint"
+    }
+  ],
+  "types": [
+    {
+      "name": "DisburseReferralArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeePool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "perp_engine",
+            "type": "pubkey"
+          },
+          {
+            "name": "usdc_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "staking_reward",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "referral_reserve",
+            "type": "pubkey"
+          },
+          {
+            "name": "staker_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "treasury_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "referral_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "total_distributed",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeePoolAccountsUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "usdc_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "usdc_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "staking_reward",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "referral_reserve",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeeSplitUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "staker_bps",
+            "type": "u16"
+          },
+          {
+            "name": "treasury_bps",
+            "type": "u16"
+          },
+          {
+            "name": "referral_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeesDistributed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "total",
+            "type": "u64"
+          },
+          {
+            "name": "staker_share",
+            "type": "u64"
+          },
+          {
+            "name": "treasury_share",
+            "type": "u64"
+          },
+          {
+            "name": "referral_share",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeFeePoolArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "perp_engine",
+            "type": "pubkey"
+          },
+          {
+            "name": "usdc_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "staking_reward",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "referral_reserve",
+            "type": "pubkey"
+          },
+          {
+            "name": "staker_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "treasury_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "referral_split_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReferralDisbursed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "affiliate",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount_usdc",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TreasuryWithdrawal",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "destination",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateFeeSplitArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "staker_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "treasury_split_bps",
+            "type": "u16"
+          },
+          {
+            "name": "referral_split_bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WithdrawTreasuryArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}

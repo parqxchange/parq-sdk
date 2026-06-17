@@ -1,0 +1,767 @@
+{
+  "address": "6fsnWa9tcKcPiuQgdUbTMsiwUr43MNoxa1FECPFrvSpd",
+  "metadata": {
+    "name": "oracle_adapter",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "initialize_oracle_config",
+      "discriminator": [
+        131,
+        55,
+        232,
+        105,
+        168,
+        248,
+        10,
+        102
+      ],
+      "accounts": [
+        {
+          "name": "oracle_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "migrate_market_oracle_v2",
+      "discriminator": [
+        48,
+        200,
+        212,
+        123,
+        169,
+        104,
+        129,
+        183
+      ],
+      "accounts": [
+        {
+          "name": "market_oracle",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  99,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "market_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "register_market_oracle",
+      "discriminator": [
+        38,
+        205,
+        145,
+        143,
+        23,
+        230,
+        50,
+        115
+      ],
+      "accounts": [
+        {
+          "name": "market_oracle",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "oracle_config"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "oracle_config"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "RegisterMarketOracleArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_dual_test_bytes",
+      "discriminator": [
+        48,
+        76,
+        168,
+        213,
+        185,
+        68,
+        66,
+        139
+      ],
+      "accounts": [
+        {
+          "name": "target_account",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "SetDualTestBytesArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_test_price",
+      "discriminator": [
+        132,
+        240,
+        240,
+        176,
+        155,
+        122,
+        8,
+        176
+      ],
+      "accounts": [
+        {
+          "name": "market_oracle"
+        },
+        {
+          "name": "test_price_feed",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  101,
+                  115,
+                  116,
+                  95,
+                  112,
+                  114,
+                  105,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market_oracle.market_id",
+                "account": "MarketOracle"
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "market_oracle"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "price",
+          "type": "u64"
+        },
+        {
+          "name": "confidence",
+          "type": "u64"
+        },
+        {
+          "name": "timestamp",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "update_market_oracle_feeds",
+      "discriminator": [
+        0,
+        185,
+        113,
+        123,
+        194,
+        47,
+        50,
+        205
+      ],
+      "accounts": [
+        {
+          "name": "market_oracle",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "market_oracle"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "UpdateMarketOracleFeedsArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_oracle_config",
+      "discriminator": [
+        83,
+        16,
+        11,
+        254,
+        57,
+        99,
+        156,
+        58
+      ],
+      "accounts": [
+        {
+          "name": "market_oracle",
+          "writable": true
+        },
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "market_oracle"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "UpdateOracleConfigArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "validate_and_read_price",
+      "discriminator": [
+        178,
+        205,
+        56,
+        79,
+        30,
+        142,
+        85,
+        255
+      ],
+      "accounts": [
+        {
+          "name": "market_oracle"
+        },
+        {
+          "name": "primary_feed"
+        },
+        {
+          "name": "secondary_feed"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "MarketOracle",
+      "discriminator": [
+        93,
+        61,
+        163,
+        40,
+        122,
+        52,
+        19,
+        1
+      ]
+    },
+    {
+      "name": "OracleConfig",
+      "discriminator": [
+        133,
+        196,
+        152,
+        50,
+        27,
+        21,
+        145,
+        254
+      ]
+    },
+    {
+      "name": "TestPriceFeed",
+      "discriminator": [
+        135,
+        101,
+        188,
+        52,
+        250,
+        215,
+        124,
+        86
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "OraclePriceRead",
+      "discriminator": [
+        103,
+        112,
+        1,
+        18,
+        62,
+        61,
+        109,
+        85
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "PriceStale",
+      "msg": "Price feed is stale"
+    },
+    {
+      "code": 6001,
+      "name": "PriceUncertain",
+      "msg": "Price confidence interval too wide"
+    },
+    {
+      "code": 6002,
+      "name": "FeedMismatch",
+      "msg": "Feed account does not match registered address"
+    },
+    {
+      "code": 6003,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    },
+    {
+      "code": 6004,
+      "name": "MathOverflow",
+      "msg": "Math overflow in price normalization"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidAccountData",
+      "msg": "Account data has wrong size or layout (not V1, not V2, or otherwise unexpected)"
+    },
+    {
+      "code": 6006,
+      "name": "TestModeNotEnabled",
+      "msg": "test-mode feature not compiled in"
+    }
+  ],
+  "types": [
+    {
+      "name": "MarketOracle",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "primary_oracle_type",
+            "type": {
+              "defined": {
+                "name": "OracleType"
+              }
+            }
+          },
+          {
+            "name": "primary_feed_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "primary_max_staleness_secs",
+            "type": "u64"
+          },
+          {
+            "name": "secondary_oracle_type",
+            "type": {
+              "defined": {
+                "name": "OracleType"
+              }
+            }
+          },
+          {
+            "name": "secondary_feed_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "secondary_max_staleness_secs",
+            "type": "u64"
+          },
+          {
+            "name": "max_confidence_pct",
+            "type": "u16"
+          },
+          {
+            "name": "price_decimals",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OraclePriceRead",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "confidence",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "source",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleType",
+      "repr": {
+        "kind": "rust"
+      },
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pyth"
+          },
+          {
+            "name": "Switchboard"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegisterMarketOracleArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "primary_oracle_type",
+            "type": {
+              "defined": {
+                "name": "OracleType"
+              }
+            }
+          },
+          {
+            "name": "primary_feed_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "primary_max_staleness_secs",
+            "type": "u64"
+          },
+          {
+            "name": "max_confidence_pct",
+            "type": "u16"
+          },
+          {
+            "name": "price_decimals",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SetDualTestBytesArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "kind",
+            "type": {
+              "defined": {
+                "name": "TestFeedKind"
+              }
+            }
+          },
+          {
+            "name": "price",
+            "type": "i64"
+          },
+          {
+            "name": "conf",
+            "type": "u64"
+          },
+          {
+            "name": "exponent",
+            "type": "i32"
+          },
+          {
+            "name": "publish_time",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TestFeedKind",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pyth"
+          },
+          {
+            "name": "Switchboard"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TestPriceFeed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "confidence",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateMarketOracleFeedsArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "primary_oracle_type",
+            "type": {
+              "defined": {
+                "name": "OracleType"
+              }
+            }
+          },
+          {
+            "name": "primary_feed_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "primary_max_staleness_secs",
+            "type": "u64"
+          },
+          {
+            "name": "secondary_oracle_type",
+            "type": {
+              "defined": {
+                "name": "OracleType"
+              }
+            }
+          },
+          {
+            "name": "secondary_feed_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "secondary_max_staleness_secs",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateOracleConfigArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "max_staleness_secs",
+            "type": "u64"
+          },
+          {
+            "name": "max_confidence_pct",
+            "type": "u16"
+          }
+        ]
+      }
+    }
+  ]
+}
