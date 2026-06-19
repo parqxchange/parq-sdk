@@ -1,0 +1,60 @@
+name: publish
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Pack only, do not publish"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://registry.npmjs.org"
+      - run: npm install -g npm@latest
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Guard — tag matches package.json version (tag runs only)
+        if: github.event_name == 'push'
+        run: |
+          PKG=$(node -p "require('./package.json').version")
+          TAG=${GITHUB_REF_NAME#v}
+          [ "$PKG" = "$TAG" ] || { echo "::error::tag v$TAG != package.json $PKG"; exit 1; }
+      - name: Guard — version not already on npm
+        run: |
+          N=$(node -p "require('./package.json').name")
+          V=$(node -p "require('./package.json').version")
+          ! npm view "$N@$V" version >/dev/null 2>&1 || { echo "::error::$N@$V already published"; exit 1; }
+      - name: Detect auth mode (token present => bootstrap; absent => OIDC)
+        id: auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -n "$NPM_TOKEN" ]; then echo "mode=token" >> "$GITHUB_OUTPUT"
+          else echo "mode=oidc" >> "$GITHUB_OUTPUT"; fi
+      - name: Strip empty authToken line so OIDC can engage
+        if: steps.auth.outputs.mode == 'oidc'
+        run: |
+          NPMRC="${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
+          [ -f "$NPMRC" ] && sed -i '/_authToken/d' "$NPMRC" || true
+      - name: Dry-run pack
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+        run: npm pack --dry-run
+      - name: Publish (token bootstrap)
+        if: steps.auth.outputs.mode == 'token' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish (OIDC trusted publishing)
+        if: steps.auth.outputs.mode == 'oidc' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+        run: npm publish --provenance --access public
