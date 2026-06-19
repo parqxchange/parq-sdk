@@ -1,0 +1,99 @@
+{
+  "name": "@parqxchange/sdk",
+  "version": "0.2.7",
+  "description": "TypeScript SDK for Parquet — the perpetual futures DEX on Solana.",
+  "license": "MIT",
+  "author": "Parquet",
+  "homepage": "https://parquet.exchange",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/parqxchange/parq-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/parqxchange/parq-sdk/issues"
+  },
+  "keywords": [
+    "parquet",
+    "solana",
+    "perpetuals",
+    "perps",
+    "defi",
+    "trading",
+    "stocks",
+    "sdk",
+    "anchor",
+    "web3"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./minimal": {
+      "types": "./dist/minimal.d.ts",
+      "default": "./dist/minimal.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    },
+    "./idl/*": "./idl/*"
+  },
+  "files": [
+    "dist",
+    "idl",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "jest"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/__tests__"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.test.ts"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json"
+    ],
+    "transform": {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          "tsconfig": "tsconfig.test.json"
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
+    "@noble/hashes": "^1.8.0",
+    "@solana/spl-token": "^0.4.9",
+    "@solana/web3.js": "^1.98.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^25.9.3",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.11",
+    "typescript": "^5.5.0"
+  }
+}
